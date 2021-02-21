@@ -1,153 +1,231 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.Entity;
-using System.Data.Entity.Infrastructure;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Web.Http;
-using System.Web.Http.Description;
+using System.Web;
+using System.Web.Mvc;
 using Passion_Project.Models;
+using Passion_Project.Models.ViewModels;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Diagnostics;
+using System.Web.Script.Serialization;
 
 namespace Passion_Project.Controllers
 {
-    public class RecipesController : ApiController
+    public class RecipesController : Controller
     {
-        private WorldCuisineDataContext db = new WorldCuisineDataContext();
+        private JavaScriptSerializer jss = new JavaScriptSerializer();
+        private static readonly HttpClient client;
 
-        // GET: api/Recipes/GetRecipes
-        public IEnumerable<RecipeDto> GetRecipes()
+
+        static RecipesController()
         {
-            List<Recipes> Recipes = db.Recipes.ToList();
-            List<RecipeDto> RecipeDto = new List<RecipeDto> { };
-
-            //Here you can choose which information is exposed to the API
-            foreach (var Recipe in Recipes)
+            HttpClientHandler handler = new HttpClientHandler()
             {
-                RecipeDto NewRecipe = new RecipeDto
-                {
-                    RecipeID = Recipe.RecipeID,
-                    RecipeType = Recipe.RecipeType,
-                    NoOfServings = Recipe.NoOfServings
-                };
-                RecipeDto.Add(NewRecipe);
-            }
-
-            return RecipeDto;
-        }
-
-        // GET: api/Recipes/FindRecipe/5
-        [ResponseType(typeof(RecipeDto))]
-        [HttpGet]
-        public IHttpActionResult FindRecipe(int id)
-        {
-            //Find the data
-            Recipes Recipe = db.Recipes.Find(id);
-            //if not found, return 404 status code.
-            if (Recipe == null)
-            {
-                return NotFound();
-            }
-
-            //put into a 'friendly object format'
-            RecipeDto RecipeDto = new RecipeDto
-            {
-                RecipeID = Recipe.RecipeID,
-                RecipeType = Recipe.RecipeType,
-                NoOfServings = Recipe.NoOfServings
+                AllowAutoRedirect = false
             };
+            client = new HttpClient(handler);
+            //change this to match your own local port number
+            client.BaseAddress = new Uri("https://localhost:64913/api/");
+            client.DefaultRequestHeaders.Accept.Add(
+            new MediaTypeWithQualityHeaderValue("application/json"));
 
 
-            //pass along data as 200 status code OK response
-            return Ok(RecipeDto);
+            //client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", ACCESS_TOKEN);
+
         }
 
 
-        // POST: api/Recipes/UpdateRecipe/5
-        // FORM DATA: Recipe JSON Object
-        [ResponseType(typeof(void))]
+
+        // GET: Player/List
+        public ActionResult List()
+        {
+            string url = "recipedata/getrecipes";
+            HttpResponseMessage response = client.GetAsync(url).Result;
+            if (response.IsSuccessStatusCode)
+            {
+                IEnumerable<RecipeDto> SelectedRecipes = response.Content.ReadAsAsync<IEnumerable<RecipeDto>>().Result;
+                return View(SelectedRecipes);
+            }
+            else
+            {
+                return RedirectToAction("Error");
+            }
+        }
+
+        // GET: Recipes/Details/5
+        public ActionResult Details(int id)
+        {
+            ShowRecipe ViewModel = new ShowRecipe();
+            string url = "recipedata/findrecipe/" + id;
+            HttpResponseMessage response = client.GetAsync(url).Result;
+            //Can catch the status code (200 OK, 301 REDIRECT), etc.
+            //Debug.WriteLine(response.StatusCode);
+            if (response.IsSuccessStatusCode)
+            {
+                //Put data into recipe data transfer object
+                RecipeDto SelectedPlayer = response.Content.ReadAsAsync<RecipeDto>().Result;
+                ViewModel.recipe = SelectedPlayer;
+
+
+                url = "playerdata/findteamforplayer/" + id;
+                response = client.GetAsync(url).Result;
+                RecipeDto SelectedRecipe = response.Content.ReadAsAsync<RecipeDto>().Result;
+                ViewModel.recipe = SelectedRecipe;
+
+                return View(ViewModel);
+            }
+            else
+            {
+                return RedirectToAction("Error");
+            }
+        }
+
+        // GET: Player/Create
+        public ActionResult Create()
+        {
+            UpdateRecipe ViewModel = new UpdateRecipe();
+            //get information about teams this player COULD play for.
+            string url = "dishdata/getdishes";
+            HttpResponseMessage response = client.GetAsync(url).Result;
+            IEnumerable<DishesDto> PotentialDishes = response.Content.ReadAsAsync<IEnumerable<DishesDto>>().Result;
+            ViewModel.alldishes = PotentialDishes;
+
+            return View(ViewModel);
+        }
+
+        // POST: Player/Create
         [HttpPost]
-        public IHttpActionResult UpdateRecipe(int id, [FromBody] Recipes recipe)
+        [ValidateAntiForgeryToken()]
+        public ActionResult Create(Recipes RecipeInfo)
         {
-            if (!ModelState.IsValid)
+            Debug.WriteLine(RecipeInfo.RecipeType);
+            string url = "recipedata/addrecipe";
+            Debug.WriteLine(jss.Serialize(RecipeInfo));
+            HttpContent content = new StringContent(jss.Serialize(RecipeInfo));
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            HttpResponseMessage response = client.PostAsync(url, content).Result;
+
+            if (response.IsSuccessStatusCode)
             {
-                return BadRequest(ModelState);
+
+                int RecipeId = response.Content.ReadAsAsync<int>().Result;
+                return RedirectToAction("Details", new { id = RecipeId });
+            }
+            else
+            {
+                return RedirectToAction("Error");
             }
 
-            if (id != recipe.RecipeID)
-            {
-                return BadRequest();
-            }
 
-            db.Entry(recipe).State = EntityState.Modified;
-
-            try
-            {
-                db.SaveChanges();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!RecipesExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return StatusCode(HttpStatusCode.NoContent);
         }
 
-        // POST: api/Recipes/AddRecipe
-        // FORM DATA: Recipe JSON Object
-        [ResponseType(typeof(Recipes))]
+        // GET: Player/Edit/5
+        public ActionResult Edit(int id)
+        {
+            UpdateRecipe ViewModel = new UpdateRecipe();
+
+            string url = "recipedata/findrecipe/" + id;
+            HttpResponseMessage response = client.GetAsync(url).Result;
+            //Can catch the status code (200 OK, 301 REDIRECT), etc.
+            //Debug.WriteLine(response.StatusCode);
+            if (response.IsSuccessStatusCode)
+            {
+                //Put data into player data transfer object
+                RecipeDto SelectedRecipes = response.Content.ReadAsAsync<RecipeDto>().Result;
+                ViewModel.recipe = SelectedRecipes;
+
+                //get information about teams this player COULD play for.
+                url = "dishdata/getdishes";
+                response = client.GetAsync(url).Result;
+                IEnumerable<DishesDto> PotentialDishes = response.Content.ReadAsAsync<IEnumerable<DishesDto>>().Result;
+                ViewModel.alldishes = PotentialDishes;
+
+                return View(ViewModel);
+            }
+            else
+            {
+                return RedirectToAction("Error");
+            }
+        }
+
+        // POST: Player/Edit/5
         [HttpPost]
-        public IHttpActionResult AddRecipe([FromBody] Recipes recipe)
+        [ValidateAntiForgeryToken()]
+        public ActionResult Edit(int id, Recipes RecipeInfo, HttpPostedFileBase RecipePic)
         {
-            //Will Validate according to data annotations specified on model
-            if (!ModelState.IsValid)
+            Debug.WriteLine(RecipeInfo.RecipeType);
+            string url = "recipedata/updaterecipe/" + id;
+            Debug.WriteLine(jss.Serialize(RecipeInfo));
+            HttpContent content = new StringContent(jss.Serialize(RecipeInfo));
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+            HttpResponseMessage response = client.PostAsync(url, content).Result;
+            Debug.WriteLine(response.StatusCode);
+            if (response.IsSuccessStatusCode)
             {
-                return BadRequest(ModelState);
+
+                //Send over image data for player
+                url = "recipedata/updaterecipepic/" + id;
+                Debug.WriteLine("Received recipe picture " + RecipePic.FileName);
+
+                MultipartFormDataContent requestcontent = new MultipartFormDataContent();
+                HttpContent imagecontent = new StreamContent(RecipePic.InputStream);
+                requestcontent.Add(imagecontent, "RecipePic", RecipePic.FileName);
+                response = client.PostAsync(url, requestcontent).Result;
+
+                return RedirectToAction("Details", new { id = id });
             }
-
-            db.Recipes.Add(recipe);
-            db.SaveChanges();
-
-            return CreatedAtRoute("DefaultApi", new { id = recipe.RecipeID }, recipe);
+            else
+            {
+                return RedirectToAction("Error");
+            }
         }
 
-        // DELETE: api/Recipes/5
-        [ResponseType(typeof(Recipes))]
-        public IHttpActionResult DeleteRecipes(int id)
+        // GET: Player/Delete/5
+        [HttpGet]
+        public ActionResult DeleteConfirm(int id)
         {
-            Recipes recipes = db.Recipes.Find(id);
-            if (recipes == null)
+            string url = "recipedata/findrecipe/" + id;
+            HttpResponseMessage response = client.GetAsync(url).Result;
+            //Can catch the status code (200 OK, 301 REDIRECT), etc.
+            //Debug.WriteLine(response.StatusCode);
+            if (response.IsSuccessStatusCode)
             {
-                return NotFound();
+                //Put data into player data transfer object
+                RecipeDto SelectedRecipes = response.Content.ReadAsAsync<RecipeDto>().Result;
+                return View(SelectedRecipes);
             }
-
-            db.Recipes.Remove(recipes);
-            db.SaveChanges();
-
-            return Ok(recipes);
+            else
+            {
+                return RedirectToAction("Error");
+            }
         }
 
-        protected override void Dispose(bool disposing)
+        // POST: Player/Delete/5
+        [HttpPost]
+        [ValidateAntiForgeryToken()]
+        public ActionResult Delete(int id)
         {
-            if (disposing)
+            string url = "recipedata/deleterecipe/" + id;
+            //post body is empty
+            HttpContent content = new StringContent("");
+            HttpResponseMessage response = client.PostAsync(url, content).Result;
+            //Can catch the status code (200 OK, 301 REDIRECT), etc.
+            //Debug.WriteLine(response.StatusCode);
+            if (response.IsSuccessStatusCode)
             {
-                db.Dispose();
+
+                return RedirectToAction("List");
             }
-            base.Dispose(disposing);
+            else
+            {
+                return RedirectToAction("Error");
+            }
         }
 
-        private bool RecipesExists(int id)
+        public ActionResult Error()
         {
-            return db.Recipes.Count(e => e.RecipeID == id) > 0;
+            return View();
         }
     }
 }

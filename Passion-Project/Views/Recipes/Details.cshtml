@@ -1,0 +1,42 @@
+﻿@model Passion_Project.Models.Recipes
+
+@{
+    ViewBag.Title = "Details";
+}
+
+<h2>Details</h2>
+
+<div>
+    <h4>Recipes</h4>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Dishes.DishName)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Dishes.DishName)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.RecipeType)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.RecipeType)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.NoOfServings)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.NoOfServings)
+        </dd>
+
+    </dl>
+</div>
+<p>
+    @Html.ActionLink("Edit", "Edit", new { id = Model.RecipeID }) |
+    @Html.ActionLink("Back to List", "Index")
+</p>

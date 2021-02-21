@@ -141,6 +141,7 @@
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\RecipesController.cs" />
+    <Compile Include="Controllers\RecipesDataController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -148,9 +149,15 @@
     <Compile Include="Migrations\202102210736107_passionprojectmvp.designer.cs">
       <DependentUpon>202102210736107_passionprojectmvp.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\202102212022566_updatedmigration2202.cs" />
+    <Compile Include="Migrations\202102212022566_updatedmigration2202.Designer.cs">
+      <DependentUpon>202102212022566_updatedmigration2202.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\Dishes.cs" />
     <Compile Include="Models\Recipes.cs" />
+    <Compile Include="Models\ViewModels\ShowRecipe.cs" />
+    <Compile Include="Models\ViewModels\UpdateRecipe.cs" />
     <Compile Include="Models\WorldCuisineDataContext.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -190,6 +197,11 @@
     <Content Include="Views\Home\About.cshtml" />
     <Content Include="Views\Home\Contact.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
+    <Content Include="Views\Recipes\List.cshtml" />
+    <Content Include="Views\Recipes\Details.cshtml" />
+    <Content Include="Views\Recipes\Create.cshtml" />
+    <Content Include="Views\Recipes\Edit.cshtml" />
+    <Content Include="Views\Recipes\DeleteConfirm.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
@@ -211,6 +223,9 @@
   <ItemGroup>
     <EmbeddedResource Include="Migrations\202102210736107_passionprojectmvp.resx">
       <DependentUpon>202102210736107_passionprojectmvp.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202102212022566_updatedmigration2202.resx">
+      <DependentUpon>202102212022566_updatedmigration2202.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>
