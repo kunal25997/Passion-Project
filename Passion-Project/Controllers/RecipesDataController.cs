@@ -16,11 +16,12 @@ namespace Passion_Project.Controllers
     public class RecipesDataController : ApiController
     {
         private WorldCuisineDataContext db = new WorldCuisineDataContext();
-
+        [ResponseType(typeof(IEnumerable<RecipeDto>))]
+        [Route("api/recipedata/getrecipe")]
         // GET: api/Recipes/GetRecipes
-        public IEnumerable<RecipeDto> GetRecipes()
+        public IHttpActionResult GetRecipes(int id)
         {
-            List<Recipes> Recipes = db.Recipes.ToList();
+            List<Recipes> Recipes = db.Recipes.Where(p => p.RecipeID == id).ToList();
             List<RecipeDto> RecipeDto = new List<RecipeDto> { };
 
             //Here you can choose which information is exposed to the API
@@ -35,7 +36,7 @@ namespace Passion_Project.Controllers
                 RecipeDto.Add(NewRecipe);
             }
 
-            return RecipeDto;
+            return Ok(RecipeDto);
         }
 
         // GET: api/Recipes/FindRecipe/5
