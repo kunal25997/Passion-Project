@@ -1,13 +1,32 @@
-﻿body {
-    padding-top: 50px;
-    padding-bottom: 20px;
-}
-
-/* Set padding to keep content from hitting the edges */
+﻿/* Set padding to keep content from hitting the edges */
 .body-content {
     padding-left: 15px;
     padding-right: 15px;
 }
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: aquamarine;
+}
+
+footer p {
+    font-size: 12px;
+}
+
+footer {
+    padding-top: 50px;
+}
+
+.navbar-inverse {
+    border-radius: 0px;
+    background: #F6E71D;
+}
+
+    .navbar-inverse .navbar-nav > li > a, .navbar-inverse .navbar-brand {
+        color: #181818;
+        font-weight: 400;
+    }
+
 
 /* Override the default bootstrap behavior where horizontal description lists 
    will truncate terms that are too long to fit in the left column 
@@ -21,4 +40,22 @@ input,
 select,
 textarea {
     max-width: 280px;
+}
+
+@media screen and (max-width:700px) {
+    /*change to two column*/
+    .record {
+        width: 48%;
+        margin-left: 1%;
+        margin-right: 1%;
+    }
+}
+
+@media screen and (max-width:500px) {
+    /*change to one column*/
+    .record {
+        width: 98%;
+        margin-left: 1%;
+        margin-right: 1%;
+    }
 }
